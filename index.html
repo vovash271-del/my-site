@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой сайт с аналитикой</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px;
+            text-align: center;
+            background-color: #f4f4f9;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Добро пожаловать на тестовую страницу</h1>
+    <p>Этот сайт автоматически отправляет технические параметры сессии на ваш сервер для аналитики.</p>
+    
+    <!-- Кнопка для опционального запроса точных координат -->
+    <button onclick="requestLocation()">Разрешить геолокацию</button>
+
+    <script>
+        // Главная функция сбора и отправки данных
+        async function collectAnalytics(extraData = {}) {
+            let batteryLevel = "Не поддерживается";
+            
+            // Проверяем, поддерживает ли браузер Battery API
+            if (navigator.getBattery) {
+                try {
+                    const battery = await navigator.getBattery();
+                    batteryLevel = `${Math.round(battery.level * 100)}%`;
+                } catch (e) {
+                    batteryLevel = "Ошибка доступа";
+                }
+            }
+
+            // Формируем пакет данных от JavaScript
+            const payload = {
+                screenResolution: `${window.screen.width}x${window.screen.height}`,
+                windowSize: `${window.innerWidth}x${window.innerHeight}`,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                localTime: new Date().toLocaleTimeString(),
+                battery: batteryLevel,
+                ...extraData // Если передана геолокация, она добавится сюда
+            };
+
+            // Отправляем JSON-данные через интернет-туннель LocalTunnel
+            fetch('https://loca.lt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => console.log('Ответ сервера:', data))
+            .catch(err => console.error('Не удалось отправить данные на сервер:', err));
+        }
+
+        // Автоматический запуск сбора базовых данных сразу после загрузки страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            collectAnalytics();
+        });
+
+        // Функция, которая сработает только при нажатии на кнопку разрешения геопозиции
+        function requestLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const geoData = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude
+                        };
+                        // Отправляем данные повторно, но уже с точными координатами
+                        collectAnalytics(geoData);
+                        alert("Координаты успешно отправлены на сервер!");
+                    },
+                    (error) => {
+                        console.log('Пользователь отклонил запрос геопозиции или произошла ошибка.');
+                        alert("Доступ к геолокации отклонен.");
+                    }
+                );
+            } else {
+                alert("Геопозиция не поддерживается вашим браузером.");
+            }
+        }
+    </script>
+</body>
+</html>
